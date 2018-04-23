@@ -275,6 +275,12 @@ main = ->
     # landscape
     renderWidth = Math.floor(window.innerHeight / 9 * 16)
     renderHeight = window.innerHeight
+
+  # is this better or worse?
+  renderWidth = window.innerWidth
+  renderHeight = window.innerHeight
+
+
   renderer.setSize(renderWidth, renderHeight)
   document.body.appendChild(renderer.domElement)
 
