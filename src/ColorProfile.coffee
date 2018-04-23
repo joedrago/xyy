@@ -67,7 +67,18 @@ deriveColorMatrix = (r, g, b, w) ->
 
 BT709_TO_XYZ = deriveColorMatrix([0.64, 0.33], [0.3, 0.6], [0.15, 0.06], [0.3127, 0.3290])
 
+getBaseLog = (x, y) ->
+  return Math.log(y) / Math.log(x)
+
+getLogLuminance = (L) ->
+  L *= 10000
+  if L < 1
+    return 0
+  return (getBaseLog(10, L) / 4)
+
 class ColorProfile
+  @getLogLuminance : getLogLuminance
+
   constructor: (@primaries, @luminance) ->
     @toXYZ = deriveColorMatrix(@primaries.red, @primaries.green, @primaries.blue, @primaries.white)
     @fromXYZ = MtxInvert3x3(@toXYZ)
@@ -99,7 +110,7 @@ class ColorProfile
     XYZ = matrixMultiply(@toXYZ, RGB)
     return XYZ[1]
 
-  calc: (x, y, intensity) ->
+  calc: (x, y, intensity, mode = 'none') ->
     maxIntensity = @xyMaxIntensity(x, y)
     scaledIntensity = intensity * maxIntensity
     # console.log "calc #{x},#{y},#{intensity} got max #{maxIntensity}, scaled #{scaledIntensity}"
@@ -109,9 +120,17 @@ class ColorProfile
       ((1 - x - y) * scaledIntensity) / y
     ]
     RGB = matrixMultiply(@fromXYZ, XYZ)
+    L = scaledIntensity
+    switch mode
+      when 'scaled'
+        L *= (@luminance / 10000)
+      when 'log'
+        L = getLogLuminance(L * (@luminance / 10000))
+      when 'gamma'
+        L = Math.pow(L, 1.0 / 2.4)# * (@luminance / 10000)
     return {
       x: y
-      y: scaledIntensity * (@luminance / 10000)
+      y: L
       z: x
 
       r: RGB[0]
