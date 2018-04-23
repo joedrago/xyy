@@ -2,7 +2,7 @@ THREE = require 'three'
 OrbitControls = require('three-orbit-controls')(THREE)
 ColorProfile = require './ColorProfile'
 
-GLOBAL_STEPS = 200
+GLOBAL_STEPS = 170
 
 createEdge = (profile, p0, p1, mode) ->
   steps = GLOBAL_STEPS
@@ -310,6 +310,12 @@ main = ->
     blue: [0.15, 0.06]
     white: [0.3127, 0.3290]
   }, 300)
+  colorSpaces.push new ColorSpace("DCI-P3", {
+    red: [0.68, 0.32]
+    green: [0.265, 0.690]
+    blue: [0.150, 0.060]
+    white: [0.3127, 0.3290]
+  }, 300)
   colorSpaces.push new ColorSpace("Rec.2020", {
     red: [0.708, 0.292]
     green: [0.170, 0.797]
@@ -330,6 +336,7 @@ main = ->
     colorSpacesEnabled[index] = !colorSpacesEnabled[index]
 
   mode = 'log'
+  toggleColorSpace(1) # disable P3 by default
 
   controls = new OrbitControls(camera, renderer.domElement)
   controls.target.set(0.3127, 0.25, 0.329)
@@ -377,6 +384,8 @@ main = ->
         toggleColorSpace(0)
       when "2"
         toggleColorSpace(1)
+      when "3"
+        toggleColorSpace(2)
       when "l"
         showLabels = !showLabels
       when "t"
@@ -455,11 +464,17 @@ main = ->
         colorSpace.showLines(false)
         colorSpace.showLabel(false)
 
-    bigOpacity = 1
+    opacity2020 = 1
+    if (colorSpacesEnabled[0] or colorSpacesEnabled[1]) and colorSpacesEnabled[2]
+      opacity2020 = 0.7
+    if colorSpacesEnabled[2]
+      colorSpaces[2].setOpacity(opacity2020)
+
+    opacityP3 = 1
     if colorSpacesEnabled[0] and colorSpacesEnabled[1]
-      bigOpacity = 0.7
+      opacityP3 = 0.7
     if colorSpacesEnabled[1]
-      colorSpaces[1].setOpacity(bigOpacity)
+      colorSpaces[1].setOpacity(opacityP3)
 
     controls.autoRotate = (meshMode != 'none') and allowRotate
     controls.update()
