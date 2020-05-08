@@ -265,30 +265,44 @@ createChromaticityChart = ->
     mesh: mesh
   }
 
-main = ->
-  renderer = new THREE.WebGLRenderer()
-  if window.innerWidth < window.innerHeight
+resizeRenderer = (renderer) ->
+  windowAspectRatio = window.innerWidth / window.innerHeight
+  wantedAspectRatio = 16 / 9
+  aspectRatio = window.innerWidth / window.innerHeight
+  console.log "aspectRatio #{aspectRatio}"
+  if windowAspectRatio < wantedAspectRatio
     # portrait
+    console.log "portrait"
     renderWidth = window.innerWidth
-    renderHeight = Math.floor(window.innerWidth / 9 * 16)
+    renderHeight = Math.floor(window.innerWidth / wantedAspectRatio)
   else
     # landscape
-    renderWidth = Math.floor(window.innerHeight / 9 * 16)
+    console.log "landscape"
+    renderWidth = Math.floor(window.innerHeight * wantedAspectRatio)
     renderHeight = window.innerHeight
 
-  # is this better or worse?
-  renderWidth = window.innerWidth
-  renderHeight = window.innerHeight
+  # # is this better or worse?
+  # renderWidth = window.innerWidth
+  # renderHeight = window.innerHeight
+
+  console.log "innerWidth #{window.innerWidth} innerHeight #{window.innerHeight} renderWidth #{renderWidth} renderHeight #{renderHeight}"
 
 
   renderer.setSize(renderWidth, renderHeight)
+
+main = ->
+  renderer = new THREE.WebGLRenderer()
+  resizeRenderer(renderer)
   document.body.appendChild(renderer.domElement)
+
+  window.addEventListener "resize", ->
+    resizeRenderer(renderer)
 
   scene = new THREE.Scene()
   initialZoomInv = 2.3
   xOffset = 0.3
   yOffset = 0.2
-  camera = new THREE.OrthographicCamera( xOffset + (initialZoomInv / - 2), xOffset + (initialZoomInv / 2), yOffset + (initialZoomInv * 9/16 / 2), yOffset + (initialZoomInv * 9/16 / - 2), 0.1, 1000 );
+  camera = new THREE.OrthographicCamera( xOffset + (initialZoomInv / - 2), xOffset + (initialZoomInv / 2), yOffset + (initialZoomInv * 9/16 / 2), yOffset + (initialZoomInv * 9/16 / - 2), 0.01, 10000 );
   # camera = new THREE.PerspectiveCamera(60, renderWidth / renderHeight, 0.1, 1000)
 
   scene.background = new THREE.Color(0x222222)
@@ -304,19 +318,31 @@ main = ->
   scene.add(chart.mesh)
 
   colorSpaces = []
-  colorSpaces.push new ColorSpace("Rec. 709", {
+  colorSpaces.push new ColorSpace("BT709", {
     red: [0.64, 0.33]
     green: [0.3, 0.6]
     blue: [0.15, 0.06]
     white: [0.3127, 0.3290]
-  }, 300)
-  colorSpaces.push new ColorSpace("DCI-P3", {
+  }, 80)
+  colorSpaces.push new ColorSpace("P3", {
     red: [0.68, 0.32]
     green: [0.265, 0.690]
     blue: [0.150, 0.060]
     white: [0.3127, 0.3290]
-  }, 300)
-  colorSpaces.push new ColorSpace("Rec.2020", {
+  }, 80)
+  colorSpaces.push new ColorSpace("BT2020", {
+    red: [0.708, 0.292]
+    green: [0.170, 0.797]
+    blue: [0.131, 0.046]
+    white: [0.3127, 0.3290]
+  }, 80)
+  colorSpaces.push new ColorSpace("P3 PQ", {
+    red: [0.68, 0.32]
+    green: [0.265, 0.690]
+    blue: [0.150, 0.060]
+    white: [0.3127, 0.3290]
+  }, 10000)
+  colorSpaces.push new ColorSpace("BT2020 PQ", {
     red: [0.708, 0.292]
     green: [0.170, 0.797]
     blue: [0.131, 0.046]
@@ -336,16 +362,22 @@ main = ->
     colorSpacesEnabled[index] = !colorSpacesEnabled[index]
 
   mode = 'log'
-  toggleColorSpace(1) # disable P3 by default
+  toggleColorSpace(1) # disable
+  toggleColorSpace(2) # disable
+  toggleColorSpace(3) # disable
+
+  camera.zoom = 0.8
+  camera.position.set(0, 0, 1)
+  camera.updateProjectionMatrix()
 
   controls = new OrbitControls(camera, renderer.domElement)
   controls.target.set(0.3127, 0.25, 0.329)
-  camera.position.set(0, 0, 1)
-  controls.minDistance = 1
-  controls.maxDistance = 3
+  controls.minZoom = 0.5
+  controls.maxZoom = 2
   controls.minPolarAngle = 0
   controls.maxPolarAngle = Math.PI / 2
   controls.autoRotate = true
+  controls.enablePan = false
   controls.autoRotateSpeed = 1
   controls.enableDamping = true
   controls.dampingFactor = 0.25
@@ -361,7 +393,7 @@ main = ->
     labels[mode].push label
 
   makeLabel('log', "10 _",    0, ColorProfile.getLogLuminance(10 / 10000), 0)
-  makeLabel('log', "100 _",    0, ColorProfile.getLogLuminance(100 / 10000), 0)
+  makeLabel('log', "80 _",    0, ColorProfile.getLogLuminance(80 / 10000), 0)
   makeLabel('log', "300 _",    0, ColorProfile.getLogLuminance(300 / 10000), 0)
   makeLabel('log', "1000 _",    0, ColorProfile.getLogLuminance(1000 / 10000), 0)
   makeLabel('log', "10,000 _",    0, ColorProfile.getLogLuminance(1), 0)
@@ -377,15 +409,38 @@ main = ->
   showUpperLeftText = true
   showLabels = true
 
+  rotate2 = 0
+  rotate3 = 2
+
   document.addEventListener 'keydown', (event) ->
     # console.log event.key
     switch event.key
       when "1"
         toggleColorSpace(0)
       when "2"
-        toggleColorSpace(1)
+        rotate2 = (rotate2 + 1) % 3
+        switch rotate2
+          when 0
+            colorSpacesEnabled[1] = false
+            colorSpacesEnabled[3] = false
+          when 1
+            colorSpacesEnabled[1] = true
+            colorSpacesEnabled[3] = false
+          when 2
+            colorSpacesEnabled[1] = false
+            colorSpacesEnabled[3] = true
       when "3"
-        toggleColorSpace(2)
+        rotate3 = (rotate3 + 1) % 3
+        switch rotate3
+          when 0
+            colorSpacesEnabled[2] = false
+            colorSpacesEnabled[4] = false
+          when 1
+            colorSpacesEnabled[2] = true
+            colorSpacesEnabled[4] = false
+          when 2
+            colorSpacesEnabled[2] = false
+            colorSpacesEnabled[4] = true
       when "l"
         showLabels = !showLabels
       when "t"
@@ -454,6 +509,7 @@ main = ->
       for label in labels[labelMode]
         label.material.visible = (meshMode == labelMode) and showLabels
 
+    foundEnabled = false
     for colorSpace, index in colorSpaces
       if colorSpacesEnabled[index]
         colorSpace.showMeshes(meshMode)
@@ -464,17 +520,12 @@ main = ->
         colorSpace.showLines(false)
         colorSpace.showLabel(false)
 
-    opacity2020 = 1
-    if (colorSpacesEnabled[0] or colorSpacesEnabled[1]) and colorSpacesEnabled[2]
-      opacity2020 = 0.7
-    if colorSpacesEnabled[2]
-      colorSpaces[2].setOpacity(opacity2020)
-
-    opacityP3 = 1
-    if colorSpacesEnabled[0] and colorSpacesEnabled[1]
-      opacityP3 = 0.7
-    if colorSpacesEnabled[1]
-      colorSpaces[1].setOpacity(opacityP3)
+      opacity = 1.0
+      if foundEnabled
+        opacity = 0.7
+      colorSpace.setOpacity(opacity)
+      if colorSpacesEnabled[index]
+        foundEnabled = true
 
     controls.autoRotate = (meshMode != 'none') and allowRotate
     controls.update()

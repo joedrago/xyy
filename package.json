@@ -17,13 +17,13 @@
     "serve": "cake serve"
   },
   "devDependencies": {
-    "browserify": "^13.1.1",
-    "coffeeify": "^2.1.0",
-    "coffeescript": "^2.2.4",
-    "node-static": "^0.7.10",
-    "node-watch": "^0.4.1",
-    "three": "^0.92.0",
+    "browserify": "^16.5.1",
+    "coffeeify": "^3.0.1",
+    "coffeescript": "^2.5.1",
+    "node-static": "^0.7.11",
+    "node-watch": "^0.6.4",
+    "three": "^0.116.1",
     "three-orbit-controls": "^82.1.0",
-    "uglifyify": "^3.0.4"
+    "uglifyify": "^5.0.2"
   }
 }

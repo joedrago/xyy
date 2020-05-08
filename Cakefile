@@ -59,7 +59,7 @@ getVersion = ->
 
 watchEverything = ->
   util.log "Watching for changes in src"
-  watch ['src','package.json'], (filename) ->
+  watch ['src','package.json'], (evt, filename) ->
     coffeeFileRegex = /\.coffee$/
     if coffeeFileRegex.test(filename) || (filename == 'package.json')
       util.log "Source code #{filename} changed."
