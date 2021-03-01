@@ -22,7 +22,7 @@
     "coffeescript": "^2.5.1",
     "node-static": "^0.7.11",
     "node-watch": "^0.6.4",
-    "three": "^0.116.1",
+    "three": "^0.125.0",
     "three-orbit-controls": "^82.1.0",
     "uglifyify": "^5.0.2"
   }
